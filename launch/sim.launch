@@ -1,0 +1,57 @@
+<launch>
+  <!-- kitchen spawn coords -->
+  <arg name="x"   default="1.5"/>
+  <arg name="y"   default="1.8"/>
+  <arg name="z"   default="0.0"/>
+  <arg name="yaw" default="0.0"/>
+
+  <!-- required to find triton model definition -->
+  <env name="GAZEBO_MODEL_PATH"
+       value="$(find cs603_particle_filter)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_house.world"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="paused"       value="false"/>
+    <arg name="gui"          value="true"/>
+    <arg name="debug"        value="false"/>
+    <arg name="verbose"      value="false"/>
+  </include>
+
+  <node pkg="gazebo_ros" type="spawn_model" name="triton_spawn"
+        respawn="false" output="screen"
+        args="-file $(find cs603_particle_filter)/models/triton/model.sdf
+              -sdf
+              -x $(arg x) -y $(arg y) -z $(arg z)
+              -R 0.0 -P 0.0 -Y $(arg yaw)
+              -model triton"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="map_to_world"
+        args="0 0 0 0 0 0 /map /world 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="world_to_odom"
+        args="0 0 0 0 0 0 /world /odom 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_base_scan"
+        args="0 0 0.161 0 0 0 /base_link /base_scan 100"/>
+
+  <!-- read Gazebo ground truth, publishes /odom + odom->base_link TF -->
+  <node pkg="cs603_particle_filter" type="position_publisher.py"
+        name="position_publisher" output="screen"/>
+
+  <!-- load cfg parameters -->
+  <rosparam file="$(find team2_delivery)/config/table_locations.yaml" command="load"/>
+
+  <!-- nodes -->
+  <node name="task_coordinator" pkg="team2_delivery" type="task_coordinator.py"
+        output="screen" required="true"/>
+
+  <node name="nav_manager" pkg="team2_delivery" type="nav_manager.py"
+        output="screen"/>
+
+  <node name="perception_hub" pkg="team2_delivery" type="perception_hub.py"
+        output="screen"/>
+
+  <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py"
+        output="screen">
+    <param name="sim_mode" value="true"/>
+  </node>
+</launch>

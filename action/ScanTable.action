@@ -1,0 +1,11 @@
+# this action file defines the interface for ROS Actions between the perception_hub (server) and the task_coordinator (client)
+# actions required to allow interruptions when SAFETY_MONITOR is triggered. 
+
+# sent by task_coordinator to start a table scan
+string target_order_id
+---
+# returned when the scan completes or is preempted
+bool match_found
+---
+# data stream while the scan is in progress
+float32 search_progress  # Current rotation angle (degrees)
