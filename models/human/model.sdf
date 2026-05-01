@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="human">
+    <static>false</static>
+    <link name="link">
+      <inertial>
+        <mass>70.0</mass>
+        <inertia>
+          <ixx>20.0</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>20.0</iyy><iyz>0</iyz>
+          <izz>5.0</izz>
+        </inertia>
+      </inertial>
+
+      <!-- cylinder: radius 0.25 m, height 1.6 m, centred at z=0.8 m -->
+      <collision name="collision">
+        <pose>0 0 0.8 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.25</radius>
+            <length>1.6</length>
+          </cylinder>
+        </geometry>
+        <surface>
+          <friction>
+            <ode><mu>1.0</mu><mu2>1.0</mu2></ode>
+          </friction>
+          <contact>
+            <ode>
+              <kp>1e+13</kp>
+              <kd>1.0</kd>
+              <max_vel>0.01</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+
+      <visual name="visual">
+        <pose>0 0 0.8 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.25</radius>
+            <length>1.6</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.3 0.4 0.6 1</ambient>
+          <diffuse>0.3 0.4 0.6 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- ensure it is standing up-->
+      <gravity>1</gravity>
+    </link>
+
+    <!-- model_push plugin: same as triton but subscribes to /ped_cmd_vel -->
+    <plugin name="model_push" filename="libmodel_push.so">
+      <topicName>/ped_cmd_vel</topicName>
+    </plugin>
+  </model>
+</sdf>
