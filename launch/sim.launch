@@ -1,13 +1,13 @@
 <launch>
-  <!-- kitchen spawn coords -->
+  <!-- spawn coords -->
   <arg name="x"   default="1.5"/>
   <arg name="y"   default="1.8"/>
   <arg name="z"   default="0.0"/>
   <arg name="yaw" default="0.0"/>
+  <arg name="map_file" default="$(find team2_delivery)/maps/restaurant_map.yaml"/>
 
-  <!-- required to find triton model definition -->
   <env name="GAZEBO_MODEL_PATH"
-       value="$(find cs603_particle_filter)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+       value="$(find team2_delivery)/models:$(optenv GAZEBO_MODEL_PATH)"/>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_house.world"/>
@@ -20,11 +20,22 @@
 
   <node pkg="gazebo_ros" type="spawn_model" name="triton_spawn"
         respawn="false" output="screen"
-        args="-file $(find cs603_particle_filter)/models/triton/model.sdf
+        args="-file $(find team2_delivery)/models/triton/model.sdf
               -sdf
               -x $(arg x) -y $(arg y) -z $(arg z)
               -R 0.0 -P 0.0 -Y $(arg yaw)
               -model triton"/>
+
+  <node pkg="gazebo_ros" type="spawn_model" name="human_spawn"
+        respawn="false" output="screen"
+        args="-file $(find team2_delivery)/models/human/model.sdf
+              -sdf
+              -x -4.69 -y 4.89 -z 0.0
+              -R 0.0 -P 0.0 -Y -1.5708
+              -model human"/>
+
+  <node pkg="team2_delivery" type="human_controller.py"
+        name="human_controller" output="screen"/>
 
   <node pkg="tf" type="static_transform_publisher" name="map_to_world"
         args="0 0 0 0 0 0 /map /world 100"/>
@@ -33,16 +44,27 @@
   <node pkg="tf" type="static_transform_publisher" name="base_link_to_base_scan"
         args="0 0 0.161 0 0 0 /base_link /base_scan 100"/>
 
-  <!-- read Gazebo ground truth, publishes /odom + odom->base_link TF -->
-  <node pkg="cs603_particle_filter" type="position_publisher.py"
+  <node pkg="team2_delivery" type="position_publisher.py"
         name="position_publisher" output="screen"/>
 
   <!-- load cfg parameters -->
   <rosparam file="$(find team2_delivery)/config/table_locations.yaml" command="load"/>
 
-  <!-- nodes -->
+  <node pkg="map_server" type="map_server" name="map_server" output="screen"
+        args="$(arg map_file)"/>
+
+  <node pkg="move_base" type="move_base" name="move_base" output="screen">
+    <rosparam file="$(find team2_delivery)/config/move_base_delivery.yaml" command="load"/>
+    <remap from="cmd_vel" to="/cmd_vel"/>
+  </node>
+
   <node name="task_coordinator" pkg="team2_delivery" type="task_coordinator.py"
-        output="screen" required="true"/>
+        output="screen" required="true">
+
+    <!-- HOTSPOTS FALSE BY DEFAULT-->    
+    <param name="use_hotspots" value="false"/>
+    
+  </node>
 
   <node name="nav_manager" pkg="team2_delivery" type="nav_manager.py"
         output="screen"/>
@@ -54,4 +76,7 @@
         output="screen">
     <param name="sim_mode" value="true"/>
   </node>
+  
+  <node pkg="rviz" type="rviz" name="rviz"
+        args="-d $(find team2_delivery)/config/robot.rviz" output="screen"/>
 </launch>

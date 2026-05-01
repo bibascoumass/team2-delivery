@@ -1,0 +1,76 @@
+controller_frequency: 10.0
+planner_frequency: 1.0
+base_global_planner: navfn/NavfnROS
+base_local_planner: base_local_planner/TrajectoryPlannerROS
+
+TrajectoryPlannerROS:
+  max_vel_x: 0.45
+  min_vel_x: 0.08
+  max_vel_theta: 1.2
+  min_in_place_vel_theta: 0.25
+  acc_lim_x: 1.0
+  acc_lim_theta: 2.0
+  holonomic_robot: false
+  sim_time: 1.2
+  vx_samples: 20
+  vtheta_samples: 30
+  pdist_scale: 0.8
+  gdist_scale: 1.5
+  occdist_scale: 0.02
+
+global_costmap:
+  global_frame: map
+  robot_base_frame: base_link
+  update_frequency: 2.0
+  publish_frequency: 1.0
+  static_map: true
+  rolling_window: false
+  resolution: 0.05
+  robot_radius: 0.20
+  track_unknown_space: true
+  plugins:
+    - {name: static_layer, type: "costmap_2d::StaticLayer"}
+    - {name: obstacles,    type: "costmap_2d::ObstacleLayer"}
+    - {name: inflation,    type: "costmap_2d::InflationLayer"}
+  static_layer:
+    map_topic: /map
+    subscribe_to_updates: true
+  obstacles:
+    observation_sources: laser
+    laser:
+      sensor_frame: base_scan
+      topic: /scan
+      data_type: LaserScan
+      marking: true
+      clearing: true
+      obstacle_range: 3.0
+      raytrace_range: 4.5
+  inflation:
+    inflation_radius: 0.25
+
+local_costmap:
+  global_frame: odom
+  robot_base_frame: base_link
+  update_frequency: 8.0
+  publish_frequency: 4.0
+  static_map: false
+  rolling_window: true
+  width: 4.0
+  height: 4.0
+  resolution: 0.05
+  robot_radius: 0.20
+  plugins:
+    - {name: obstacles, type: "costmap_2d::ObstacleLayer"}
+    - {name: inflation,  type: "costmap_2d::InflationLayer"}
+  obstacles:
+    observation_sources: laser
+    laser:
+      sensor_frame: base_scan
+      topic: /scan
+      data_type: LaserScan
+      marking: true
+      clearing: true
+      obstacle_range: 3.0
+      raytrace_range: 3.5
+  inflation:
+    inflation_radius: 0.25
