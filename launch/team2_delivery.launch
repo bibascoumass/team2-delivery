@@ -1,0 +1,58 @@
+<launch>
+  <arg name="map_file"   default="$(find team2_delivery)/maps/restaurant_map.yaml"/>
+  <arg name="lidar_port" default="/dev/ttyUSB0"/>
+  <arg name="lidar_baud" default="115200"/>
+
+  <rosparam file="$(find team2_delivery)/config/table_locations.yaml" command="load"/>
+
+  <node pkg="rplidar_ros" type="rplidarNode" name="rplidar" output="screen">
+    <param name="serial_port"      value="$(arg lidar_port)"/>
+    <param name="serial_baudrate"  value="$(arg lidar_baud)"/>
+    <param name="frame_id"         value="base_scan"/>
+    <param name="angle_compensate" value="true"/>
+  </node>
+
+  <!-- base_link -> base_scan TODO - need to determine LIDAR coord args-->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="base_link_to_base_scan"
+        args="0 0 0 0 0 0 /base_link /base_scan 100"/> -->
+
+  <node pkg="map_server" type="map_server" name="map_server" output="screen"
+        args="$(arg map_file)"/>
+
+  <!-- AMCL for localization (publishes map -> odom ) -->
+  <node pkg="amcl" type="amcl" name="amcl" output="screen">
+    <rosparam file="$(find team2_delivery)/config/amcl.yaml" command="load"/>
+    <remap from="scan" to="/scan"/>
+  </node>
+
+  <node pkg="move_base" type="move_base" name="move_base" output="screen">
+    <rosparam file="$(find team2_delivery)/config/move_base_delivery.yaml" command="load"/>
+    <remap from="cmd_vel" to="/cmd_vel"/>
+  </node>
+
+  <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py"
+        output="screen">
+    <param name="sim_mode" value="false"/>
+  </node>
+
+  <node name="localizer" pkg="robot_localization" type="ekf_localization_node"
+        output="screen">
+    <rosparam file="$(find team2_delivery)/config/localizer_ekf.yaml" command="load"/>
+  </node>
+
+  <node name="task_coordinator" pkg="team2_delivery" type="task_coordinator.py"
+        output="screen" required="true">
+
+      <!-- HOTSPOTS FALSE BY DEFAULT-->    
+    <param name="use_hotspots" value="false"/>
+  </node>
+
+  <node name="nav_manager" pkg="team2_delivery" type="nav_manager.py"
+        output="screen"/>
+
+  <node name="perception_hub" pkg="team2_delivery" type="perception_hub.py"
+        output="screen"/>
+
+  <node pkg="rviz" type="rviz" name="rviz"
+        args="-d $(find team2_delivery)/config/robot.rviz" output="screen"/>
+</launch>
