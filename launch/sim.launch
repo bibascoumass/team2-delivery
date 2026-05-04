@@ -1,6 +1,6 @@
 <launch>
   <!-- spawn coords -->
-  <arg name="x"   default="1.5"/>
+  <arg name="x"   default="1.0"/>
   <arg name="y"   default="1.8"/>
   <arg name="z"   default="0.0"/>
   <arg name="yaw" default="0.0"/>
@@ -10,7 +10,7 @@
        value="$(find team2_delivery)/models:$(optenv GAZEBO_MODEL_PATH)"/>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_house.world"/>
+    <arg name="world_name" value="$(find team2_delivery)/world/turtlebot3_house.world"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="paused"       value="false"/>
     <arg name="gui"          value="true"/>
@@ -34,24 +34,37 @@
               -R 0.0 -P 0.0 -Y -1.5708
               -model human"/>
 
+  <!-- Optional dynamic obstacle. Keep disabled for baseline delivery navigation. -->
   <node pkg="team2_delivery" type="human_controller.py"
         name="human_controller" output="screen"/>
 
-  <node pkg="tf" type="static_transform_publisher" name="map_to_world"
+  <!-- <node pkg="tf" type="static_transform_publisher" name="map_to_world"
         args="0 0 0 0 0 0 /map /world 100"/>
   <node pkg="tf" type="static_transform_publisher" name="world_to_odom"
-        args="0 0 0 0 0 0 /world /odom 100"/>
+        args="0 0 0 0 0 0 /world /odom 100"/> -->
+  <!-- AMCL publishes map -> odom. Do not publish a static map -> odom in realistic mode. -->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="map_to_odom"
+      args="0 0 0 0 0 0 /map /odom 100"/> -->
   <node pkg="tf" type="static_transform_publisher" name="base_link_to_base_scan"
         args="0 0 0.161 0 0 0 /base_link /base_scan 100"/>
 
-  <node pkg="team2_delivery" type="position_publisher.py"
-        name="position_publisher" output="screen"/>
+  <!-- Disabled for realistic sim: this uses /gazebo/get_model_state ground-truth pose. -->
+  <!-- <node pkg="team2_delivery" type="position_publisher.py"
+        name="position_publisher" output="screen"/> -->
 
   <!-- load cfg parameters -->
   <rosparam file="$(find team2_delivery)/config/table_locations.yaml" command="load"/>
 
   <node pkg="map_server" type="map_server" name="map_server" output="screen"
         args="$(arg map_file)"/>
+
+  <node pkg="amcl" type="amcl" name="amcl" output="screen">
+    <rosparam file="$(find team2_delivery)/config/amcl.yaml" command="load"/>
+    <param name="initial_pose_x" value="$(arg x)"/>
+    <param name="initial_pose_y" value="$(arg y)"/>
+    <param name="initial_pose_a" value="$(arg yaw)"/>
+    <remap from="scan" to="/scan"/>
+  </node>
 
   <node pkg="move_base" type="move_base" name="move_base" output="screen">
     <rosparam file="$(find team2_delivery)/config/move_base_delivery.yaml" command="load"/>
@@ -61,8 +74,9 @@
   <node name="task_coordinator" pkg="team2_delivery" type="task_coordinator.py"
         output="screen" required="true">
 
-    <!-- HOTSPOTS FALSE BY DEFAULT-->    
-    <param name="use_hotspots" value="false"/>
+    <!-- Realistic delivery mode: coordinator chooses navigation hotspots. -->
+    <param name="use_hotspots" value="true"/>
+    <param name="hotspots_yaml" value="$(find team2_delivery)/config/hotspots.yaml"/>
     
   </node>
 
@@ -75,6 +89,9 @@
   <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py"
         output="screen">
     <param name="sim_mode" value="true"/>
+    <param name="initial_x" value="$(arg x)"/>
+    <param name="initial_y" value="$(arg y)"/>
+    <param name="initial_yaw" value="$(arg yaw)"/>
   </node>
   
   <node pkg="rviz" type="rviz" name="rviz"

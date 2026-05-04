@@ -33,6 +33,7 @@ while not rospy.is_shutdown():
 
     header.stamp = rospy.Time.now()
     odom.header = header
+    odom.child_frame_id = "base_link"
 
     odom_pub.publish (odom)
 

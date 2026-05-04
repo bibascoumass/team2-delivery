@@ -17,8 +17,8 @@ table_list:
     theta: -1.57
 
 safety_thresholds:
-  warning_dist: 0.8  # transition to AVOID_DYNAMIC
-  critical_dist: 0.3  # transition to ESTOP
+  warning_dist: 0.6  # transition to AVOID_DYNAMIC
+  critical_dist: 0.2  # transition to ESTOP
 
 
 delivery_settings:

@@ -1,27 +1,83 @@
 <launch>
-  <arg name="map_file"   default="$(find team2_delivery)/maps/restaurant_map.yaml"/>
+  <!--
+    Real robot delivery pipeline.
+
+    hardware_bridge.py is the intended robot base driver:
+      - subscribes /cmd_vel
+      - sends velocity commands to the motor controller
+      - publishes /odom and odom -> base_link from controller odometry
+
+    AMCL publishes map -> odom. Do not add a static map -> odom transform here.
+  -->
+
+  <arg name="map_file" default="$(find team2_delivery)/maps/restaurant_map.yaml"/>
+  <arg name="initial_x" default="1.0"/>
+  <arg name="initial_y" default="1.8"/>
+  <arg name="initial_yaw" default="0.0"/>
+
+  <arg name="use_hotspots" default="false"/>
+  <arg name="hotspots_yaml" default="$(find team2_delivery)/config/hotspots.yaml"/>
+
+  <arg name="start_rplidar" default="true"/>
   <arg name="lidar_port" default="/dev/ttyUSB0"/>
   <arg name="lidar_baud" default="115200"/>
 
+  <arg name="publish_laser_tf" default="true"/>
+  <arg name="laser_x" default="0.0"/>
+  <arg name="laser_y" default="0.0"/>
+  <arg name="laser_z" default="0.161"/>
+  <arg name="laser_roll" default="0.0"/>
+  <arg name="laser_pitch" default="0.0"/>
+  <arg name="laser_yaw" default="0.0"/>
+
+  <arg name="start_hardware_bridge" default="true"/>
+  <arg name="base_serial_port" default="/dev/ttyACM0"/>
+  <arg name="base_baud_rate" default="115200"/>
+  <arg name="base_cmd_format" default="CMD {linear_x:.3f} {angular_z:.3f}&#10;"/>
+  <arg name="base_stop_command" default="CMD 0.000 0.000&#10;"/>
+
+  <arg name="open_rviz" default="true"/>
+
+  <param name="/use_sim_time" value="false"/>
+
   <rosparam file="$(find team2_delivery)/config/table_locations.yaml" command="load"/>
 
-  <node pkg="rplidar_ros" type="rplidarNode" name="rplidar" output="screen">
-    <param name="serial_port"      value="$(arg lidar_port)"/>
-    <param name="serial_baudrate"  value="$(arg lidar_baud)"/>
-    <param name="frame_id"         value="base_scan"/>
-    <param name="angle_compensate" value="true"/>
-  </node>
+  <group if="$(arg start_rplidar)">
+    <node pkg="rplidar_ros" type="rplidarNode" name="rplidar" output="screen">
+      <param name="serial_port" value="$(arg lidar_port)"/>
+      <param name="serial_baudrate" value="$(arg lidar_baud)"/>
+      <param name="frame_id" value="base_scan"/>
+      <param name="angle_compensate" value="true"/>
+    </node>
+  </group>
 
-  <!-- base_link -> base_scan TODO - need to determine LIDAR coord args-->
-  <!-- <node pkg="tf" type="static_transform_publisher" name="base_link_to_base_scan"
-        args="0 0 0 0 0 0 /base_link /base_scan 100"/> -->
+  <group if="$(arg publish_laser_tf)">
+    <node pkg="tf" type="static_transform_publisher" name="base_link_to_base_scan"
+          args="$(arg laser_x) $(arg laser_y) $(arg laser_z)
+                $(arg laser_yaw) $(arg laser_pitch) $(arg laser_roll)
+                base_link base_scan 100"/>
+  </group>
 
   <node pkg="map_server" type="map_server" name="map_server" output="screen"
         args="$(arg map_file)"/>
 
+  <group if="$(arg start_hardware_bridge)">
+    <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py"
+          output="screen" required="true">
+      <param name="sim_mode" value="false"/>
+      <param name="serial_port" value="$(arg base_serial_port)"/>
+      <param name="baud_rate" value="$(arg base_baud_rate)"/>
+      <param name="cmd_format" value="$(arg base_cmd_format)"/>
+      <param name="stop_command" value="$(arg base_stop_command)"/>
+    </node>
+  </group>
+
   <!-- AMCL for localization (publishes map -> odom ) -->
   <node pkg="amcl" type="amcl" name="amcl" output="screen">
     <rosparam file="$(find team2_delivery)/config/amcl.yaml" command="load"/>
+    <param name="initial_pose_x" value="$(arg initial_x)"/>
+    <param name="initial_pose_y" value="$(arg initial_y)"/>
+    <param name="initial_pose_a" value="$(arg initial_yaw)"/>
     <remap from="scan" to="/scan"/>
   </node>
 
@@ -30,21 +86,10 @@
     <remap from="cmd_vel" to="/cmd_vel"/>
   </node>
 
-  <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py"
-        output="screen">
-    <param name="sim_mode" value="false"/>
-  </node>
-
-  <node name="localizer" pkg="robot_localization" type="ekf_localization_node"
-        output="screen">
-    <rosparam file="$(find team2_delivery)/config/localizer_ekf.yaml" command="load"/>
-  </node>
-
   <node name="task_coordinator" pkg="team2_delivery" type="task_coordinator.py"
         output="screen" required="true">
-
-      <!-- HOTSPOTS FALSE BY DEFAULT-->    
-    <param name="use_hotspots" value="false"/>
+    <param name="use_hotspots" value="$(arg use_hotspots)"/>
+    <param name="hotspots_yaml" value="$(arg hotspots_yaml)"/>
   </node>
 
   <node name="nav_manager" pkg="team2_delivery" type="nav_manager.py"

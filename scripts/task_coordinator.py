@@ -50,6 +50,7 @@ class TaskCoordinator:
         self._table_idx = 0
         self._qr_match = False
         self._safety_level = CLEAR
+        self._obstacle_type = 'unknown'
         self._dock_start = None
         self._scanning = False
 
@@ -58,11 +59,10 @@ class TaskCoordinator:
         self._cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
         self._mb = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
-        self._mb_available = self._mb.wait_for_server(timeout=rospy.Duration(3.0))
-        if self._mb_available:
-            rospy.loginfo('task_coordinator: /move_base available')
-        else:
-            rospy.logwarn('task_coordinator: /move_base not available — navigation disabled')
+        rospy.loginfo('task_coordinator: waiting for /move_base...')
+        self._mb.wait_for_server()
+        self._mb_available = True
+        rospy.loginfo('task_coordinator: /move_base available')
 
         # ScanTable client
         self._scan_client = actionlib.SimpleActionClient('scan_table', ScanTableAction)
@@ -108,6 +108,8 @@ class TaskCoordinator:
 
     def _safety_status(self, msg):
         self._safety_level = msg.status_level
+        parts = msg.sensor_source.split(':', 1)
+        self._obstacle_type = parts[1] if len(parts) == 2 else 'unknown'
 
     def _publish_state(self):
         self._state_pub.publish(String(data=self._state))
@@ -155,7 +157,9 @@ class TaskCoordinator:
                     self._state_stack.append(self._state)
                 self._set_state(ESTOP)
                 return
-            if self._safety_level == WARNING and self._state in DELIVERY_STATES:
+            if (self._safety_level == WARNING and
+                    self._obstacle_type == 'dynamic' and
+                    self._state in DELIVERY_STATES):
                 self._cancel_nav()
                 self._stop_robot()
                 self._state_stack.append(self._state)

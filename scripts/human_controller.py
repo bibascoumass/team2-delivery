@@ -18,7 +18,7 @@ WAYPOINTS = [
     (-4.69,  0.50),  # 9  west  — back to start column
 ]
 
-MAX_SPEED     = 0.7   # m/s
+MAX_SPEED     = 0.3   # m/s
 ARRIVAL_RADIUS = 0.20  # m — advance to next waypoint when this close
 DT            = 0.1   # s — matches 10 Hz rate
 

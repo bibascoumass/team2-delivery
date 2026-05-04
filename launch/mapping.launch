@@ -9,7 +9,7 @@
   <env name="GAZEBO_MODEL_PATH"
        value="$(find team2_delivery)/models:$(optenv GAZEBO_MODEL_PATH)"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_house.world"/>
+    <arg name="world_name" value="$(find team2_delivery)/world/turtlebot3_house.world"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="paused"       value="false"/>
     <arg name="gui"          value="$(arg gui)"/>
@@ -25,20 +25,20 @@
               -R 0.0 -P 0.0 -Y $(arg yaw)
               -model triton"/>
 
-  <node pkg="tf" type="static_transform_publisher" name="map_to_world"
+  <!-- <node pkg="tf" type="static_transform_publisher" name="map_to_world"
         args="0 0 0 0 0 0 /map /world 100"/>
   <node pkg="tf" type="static_transform_publisher" name="world_to_odom"
-        args="0 0 0 0 0 0 /world /odom 100"/>
+        args="0 0 0 0 0 0 /world /odom 100"/> -->
   <node pkg="tf" type="static_transform_publisher" name="base_link_to_base_scan"
-        args="0 0 0.161 0 0 0 /base_link /base_scan 100"/>
+       args="0 0 0.161 0 0 0 base_link base_scan 100"/>
 
   <node pkg="team2_delivery" type="position_publisher.py"
         name="position_publisher" output="screen"/>
 
-  <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py"
+  <!-- <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py"
         output="screen">
     <param name="sim_mode" value="true"/>
-  </node>
+  </node> -->
 
   <rosparam file="$(find team2_delivery)/config/table_locations.yaml" command="load"/>
 
@@ -97,7 +97,12 @@
     <param name="transform_tolerance"   value="0.5"/>
   </node>
 
-  <node pkg="rviz" type="rviz" name="rviz"
-        args="-d $(find team2_delivery)/config/robot.rviz" output="screen"/>
+  <arg name="open_rviz" default="false"/>
+
+      <group if="$(arg open_rviz)">
+      <node pkg="rviz" type="rviz" name="rviz"
+            args="-d $(find team2_delivery)/config/robot.rviz"
+            output="screen"/>
+      </group>
 
 </launch>

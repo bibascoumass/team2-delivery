@@ -3,20 +3,25 @@ planner_frequency: 1.0
 base_global_planner: navfn/NavfnROS
 base_local_planner: base_local_planner/TrajectoryPlannerROS
 
+recovery_behavior_enabled: false
+clearing_rotation_allowed: false
+
 TrajectoryPlannerROS:
-  max_vel_x: 0.45
-  min_vel_x: 0.08
-  max_vel_theta: 1.2
-  min_in_place_vel_theta: 0.25
-  acc_lim_x: 1.0
-  acc_lim_theta: 2.0
+  max_vel_x: 0.28
+  min_vel_x: 0.04
+  max_vel_theta: 0.65
+  min_in_place_vel_theta: 0.08
+  acc_lim_x: 0.5
+  acc_lim_theta: 1.0
   holonomic_robot: false
-  sim_time: 1.2
+  meter_scoring: true
+  sim_time: 1.6
   vx_samples: 20
   vtheta_samples: 30
   pdist_scale: 0.8
   gdist_scale: 1.5
-  occdist_scale: 0.02
+  occdist_scale: 0.45
+  escape_vel: 0.0
 
 global_costmap:
   global_frame: map
@@ -26,8 +31,8 @@ global_costmap:
   static_map: true
   rolling_window: false
   resolution: 0.05
-  robot_radius: 0.20
-  track_unknown_space: true
+  robot_radius: 0.24
+  track_unknown_space: false
   plugins:
     - {name: static_layer, type: "costmap_2d::StaticLayer"}
     - {name: obstacles,    type: "costmap_2d::ObstacleLayer"}
@@ -46,7 +51,7 @@ global_costmap:
       obstacle_range: 3.0
       raytrace_range: 4.5
   inflation:
-    inflation_radius: 0.25
+    inflation_radius: 0.45
 
 local_costmap:
   global_frame: odom
@@ -58,7 +63,7 @@ local_costmap:
   width: 4.0
   height: 4.0
   resolution: 0.05
-  robot_radius: 0.20
+  robot_radius: 0.24
   plugins:
     - {name: obstacles, type: "costmap_2d::ObstacleLayer"}
     - {name: inflation,  type: "costmap_2d::InflationLayer"}
@@ -73,4 +78,4 @@ local_costmap:
       obstacle_range: 3.0
       raytrace_range: 3.5
   inflation:
-    inflation_radius: 0.25
+    inflation_radius: 0.45

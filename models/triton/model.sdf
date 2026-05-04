@@ -649,6 +649,7 @@
     <allow_auto_disable>1</allow_auto_disable>
     <plugin name='model_push' filename='libmodel_push.so'>
       <robotNamespace>/</robotNamespace>
+      <topicName>/robot_cmd_vel</topicName>
     </plugin>
   </model>
 </sdf>
