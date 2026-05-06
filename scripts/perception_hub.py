@@ -2,7 +2,6 @@
 import math
 import rospy
 import actionlib
-from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, PointCloud2
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
@@ -17,6 +16,36 @@ uses ScanTable action server to spin in place while continuously reading from ca
 publishes /qr_data (QRInfo.msg) on every processed RGB frame.
 """
 
+
+# Decode sensor_msgs/Image to a BGR8 numpy array. CvBridge.imgmsg_to_cv2 broken due to issue with cv_bridge_boost.so
+def imgmsg_to_bgr8(msg): 
+    enc = msg.encoding
+    if enc in ('bgr8', 'rgb8'):
+        channels = 3
+    elif enc in ('bgra8', 'rgba8'):
+        channels = 4
+    elif enc == 'mono8':
+        channels = 1
+    else:
+        raise ValueError('imgmsg_to_bgr8: unsupported encoding ' + enc)
+
+    arr = np.frombuffer(msg.data, dtype=np.uint8)
+    row_bytes = msg.width * channels
+    if msg.step != row_bytes:
+        arr = arr.reshape(msg.height, msg.step)[:, :row_bytes]
+    if channels == 1:
+        arr = arr.reshape(msg.height, msg.width)
+        return cv2.cvtColor(arr, cv2.COLOR_GRAY2BGR)
+    arr = arr.reshape(msg.height, msg.width, channels)
+    if enc == 'bgr8':
+        return arr.copy()
+    if enc == 'rgb8':
+        return arr[:, :, ::-1].copy()
+    if enc == 'bgra8':
+        return arr[:, :, :3].copy()
+    # rgba8
+    return arr[:, :, [2, 1, 0]].copy()
+
 class PerceptionHub:
     def __init__(self):
         rospy.init_node('perception_hub')
@@ -25,7 +54,6 @@ class PerceptionHub:
         self._scan_max_deg = settings.get('scan_max_angle_deg', 360.0)
         self._scan_speed_degs = settings.get('scan_angular_vel_degs', 15.0)
 
-        self._bridge = CvBridge()
         self._current_order = None   # set by /target_qr
         self._qr_match = False  # set by image callback
         self._qr_detected = False
@@ -41,7 +69,7 @@ class PerceptionHub:
         self._server = actionlib.SimpleActionServer(
             'scan_table',
             ScanTableAction,
-            execute=self._handle_scan_table,
+            execute_cb=self._handle_scan_table,
             auto_start=False,
         )
         self._server.start()
@@ -60,7 +88,7 @@ class PerceptionHub:
         qr_info.is_match = False
 
         try:
-            frame = self._bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            frame = imgmsg_to_bgr8(msg)
         except Exception as e:
             rospy.logwarn_throttle(5.0, 'perception_hub: image conversion failed: %s', e)
             self._qr_pub.publish(qr_info)
