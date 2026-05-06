@@ -5,6 +5,7 @@
   <arg name="z"   default="0.0"/>
   <arg name="yaw" default="0.0"/>
   <arg name="gui" default="true"/>
+  <arg name="use_ground_truth" default="true"/>
 
   <env name="GAZEBO_MODEL_PATH"
        value="$(find team2_delivery)/models:$(optenv GAZEBO_MODEL_PATH)"/>
@@ -32,13 +33,24 @@
   <node pkg="tf" type="static_transform_publisher" name="base_link_to_base_scan"
        args="0 0 0.161 0 0 0 base_link base_scan 100"/>
 
-  <node pkg="team2_delivery" type="position_publisher.py"
-        name="position_publisher" output="screen"/>
+  <!-- Ground-truth odometry (default): better map quality in simulation -->
+  <group if="$(arg use_ground_truth)">
+    <node pkg="team2_delivery" type="position_publisher.py"
+          name="position_publisher" output="screen"/>
+    <node pkg="topic_tools" type="relay" name="cmd_vel_relay"
+          args="/cmd_vel /robot_cmd_vel"/>
+  </group>
 
-  <!-- <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py"
-        output="screen">
-    <param name="sim_mode" value="true"/>
-  </node> -->
+  <!-- Dead-reckoning odometry: mirrors real hardware, tests full SLAM pipeline -->
+  <group unless="$(arg use_ground_truth)">
+    <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py"
+          output="screen">
+      <param name="sim_mode"    value="true"/>
+      <param name="initial_x"   value="$(arg x)"/>
+      <param name="initial_y"   value="$(arg y)"/>
+      <param name="initial_yaw" value="$(arg yaw)"/>
+    </node>
+  </group>
 
   <rosparam file="$(find team2_delivery)/config/table_locations.yaml" command="load"/>
 
@@ -104,5 +116,11 @@
             args="-d $(find team2_delivery)/config/robot.rviz"
             output="screen"/>
       </group>
+
+  <node name="explore_debug_logger" pkg="team2_delivery"
+        type="explore_debug_logger.py" output="screen">
+    <param name="output_csv"
+           value="$(find team2_delivery)/explore_debug.csv"/>
+  </node>
 
 </launch>

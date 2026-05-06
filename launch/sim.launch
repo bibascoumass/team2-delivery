@@ -1,6 +1,6 @@
 <launch>
   <!-- spawn coords -->
-  <arg name="x"   default="1.0"/>
+  <arg name="x"   default="1.5"/>
   <arg name="y"   default="1.8"/>
   <arg name="z"   default="0.0"/>
   <arg name="yaw" default="0.0"/>
@@ -96,4 +96,11 @@
   
   <node pkg="rviz" type="rviz" name="rviz"
         args="-d $(find team2_delivery)/config/robot.rviz" output="screen"/>
+
+  <node name="delivery_debug_logger" pkg="team2_delivery"
+        type="delivery_debug_logger.py" output="screen">
+    <param name="output_csv"
+           value="$(find team2_delivery)/delivery_debug.csv"/>
+  </node>
+
 </launch>

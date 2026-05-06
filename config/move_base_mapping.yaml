@@ -26,7 +26,7 @@ global_costmap:
   robot_base_frame: base_link
   update_frequency: 2.0
   publish_frequency: 1.0
-  static_map: true
+  static_map: false
   rolling_window: false
   width: 20.0
   height: 20.0
@@ -35,13 +35,8 @@ global_costmap:
   track_unknown_space: true
 
   plugins:
-    - {name: static, type: "costmap_2d::StaticLayer"}
     - {name: obstacles, type: "costmap_2d::ObstacleLayer"}
     - {name: inflation, type: "costmap_2d::InflationLayer"}
-
-  static:
-    map_topic: /map
-    subscribe_to_updates: true
 
   obstacles:
     observation_sources: laser

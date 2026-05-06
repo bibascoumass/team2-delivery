@@ -6,6 +6,7 @@ import math
 import rospy
 import tf
 from actionlib_msgs.msg import GoalStatus, GoalStatusArray
+from gazebo_msgs.msg import ModelStates
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, Twist
 from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from sensor_msgs.msg import LaserScan
@@ -54,7 +55,7 @@ class DeliveryDebugLogger:
     def __init__(self):
         rospy.init_node("delivery_debug_logger")
 
-        default_csv = "/root/catkin_ws/src/team2-delivery/delivery_debug.csv"
+        default_csv = "/tmp/delivery_debug.csv"
         self._output_csv = rospy.get_param("~output_csv", default_csv)
         self._rate_hz = rospy.get_param("~rate", 2.0)
         self._near_radius = rospy.get_param("~near_radius", 0.30)
@@ -85,6 +86,9 @@ class DeliveryDebugLogger:
         self._local_plan = Path()
         self._global_costmap = None
         self._local_costmap = None
+        self._gt_x = None
+        self._gt_y = None
+        self._gt_yaw = None
 
         rospy.Subscriber("/delivery_state", String, self._delivery_state_cb)
         rospy.Subscriber("/target_qr", String, self._target_qr_cb)
@@ -102,6 +106,7 @@ class DeliveryDebugLogger:
         rospy.Subscriber("/move_base/local_costmap/costmap", OccupancyGrid, self._local_costmap_cb)
         rospy.Subscriber("/scan_table/status", GoalStatusArray, self._scan_table_status_cb)
         rospy.Subscriber("/scan_table/feedback", ScanTableActionFeedback, self._scan_table_feedback_cb)
+        rospy.Subscriber("/gazebo/model_states", ModelStates, self._model_states_cb, queue_size=1)
 
         self._file = open(self._output_csv, "w")
         self._writer = csv.writer(self._file)
@@ -175,6 +180,9 @@ class DeliveryDebugLogger:
             "local_costmap_age",
             "scan_table_status_age",
             "qr_age",
+            "gt_x",
+            "gt_y",
+            "gt_yaw",
         ])
         rospy.loginfo("delivery_debug_logger: writing %s", self._output_csv)
 
@@ -275,6 +283,16 @@ class DeliveryDebugLogger:
     def _scan_table_feedback_cb(self, msg):
         self._scan_table_progress = msg.feedback.search_progress
         self._touch("/scan_table/feedback")
+
+    def _model_states_cb(self, msg):
+        try:
+            i = msg.name.index("triton")
+        except ValueError:
+            return
+        pose = msg.pose[i]
+        self._gt_x = pose.position.x
+        self._gt_y = pose.position.y
+        self._gt_yaw = yaw_from_quaternion(pose.orientation)
 
     def _latest_status(self, msg):
         if not msg.status_list:
@@ -460,6 +478,9 @@ class DeliveryDebugLogger:
                 self._age("/move_base/local_costmap/costmap"),
                 self._age("/scan_table/status"),
                 self._age("/qr_data"),
+                self._gt_x,
+                self._gt_y,
+                self._gt_yaw,
             ])
             self._file.flush()
             rate.sleep()
