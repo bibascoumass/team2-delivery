@@ -16,7 +16,7 @@ scp ~/catkin_ws/src/team2_delivery/launch/mapping_hw.launch \
 scp ~/catkin_ws/src/team2_delivery/launch/hardware_delivery.launch \
   triton@hcr-triton-9:~/catkin_ws/src/team2_delivery/launch/
 
-scp ~/catkin_ws/src/team2_delivery/scripts/{exploration_navigator.py,delivery_state_machine.py,cmd_mux.py,qr_detector.py,qr_goal_tracker.py,hotspot_visualizer.py} \
+scp ~/catkin_ws/src/team2_delivery/scripts/{exploration_navigator.py,delivery_state_machine.py,cmd_mux.py,qr_detector.py,qr_goal_tracker.py,hotspot_visualizer.py,hardware_bridge.py} \
   triton@hcr-triton-9:~/catkin_ws/src/team2_delivery/scripts/
 ```
 
