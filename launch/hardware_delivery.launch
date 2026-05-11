@@ -1,0 +1,46 @@
+<launch>
+  <arg name="lidar_port" default="/dev/ttyUSB0"/>
+  <arg name="lidar_baud" default="115200"/>
+  <arg name="map_file" default="/home/triton/catkin_ws/my_map_explore.yaml"/>
+  <arg name="hotspots_yaml" default="/home/triton/catkin_ws/hotspots.yaml"/>
+  <arg name="open_rviz" default="false"/>
+
+  <arg name="initial_x" default="0.0"/>
+  <arg name="initial_y" default="0.0"/>
+  <arg name="initial_yaw" default="0.0"/>
+
+  <arg name="image_topic" default="/camera/rgb/image_raw"/>
+  <arg name="depth_topic" default="/camera/depth/image_raw"/>
+
+  <include file="$(find team2_delivery)/launch/mapping_hw.launch">
+    <arg name="lidar_port" value="$(arg lidar_port)"/>
+    <arg name="lidar_baud" value="$(arg lidar_baud)"/>
+    <arg name="use_saved_map" value="true"/>
+    <arg name="use_explore" value="false"/>
+    <arg name="open_rviz" value="$(arg open_rviz)"/>
+    <arg name="map_file" value="$(arg map_file)"/>
+    <arg name="initial_x" value="$(arg initial_x)"/>
+    <arg name="initial_y" value="$(arg initial_y)"/>
+    <arg name="initial_yaw" value="$(arg initial_yaw)"/>
+  </include>
+
+  <node pkg="team2_delivery" type="delivery_state_machine.py"
+        name="delivery_state_machine" output="screen"/>
+
+  <node pkg="team2_delivery" type="cmd_mux.py"
+        name="cmd_mux" output="screen"/>
+
+  <node pkg="team2_delivery" type="exploration_navigator.py"
+        name="exploration_navigator" output="screen">
+    <param name="hotspots_yaml" value="$(arg hotspots_yaml)"/>
+  </node>
+
+  <node pkg="team2_delivery" type="qr_detector.py"
+        name="qr_detector" output="screen">
+    <param name="image_topic" value="$(arg image_topic)"/>
+    <param name="depth_topic" value="$(arg depth_topic)"/>
+  </node>
+
+  <node pkg="team2_delivery" type="qr_goal_tracker.py"
+        name="qr_goal_tracker" output="screen"/>
+</launch>
