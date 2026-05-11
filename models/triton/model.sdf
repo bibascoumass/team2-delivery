@@ -647,7 +647,7 @@
     </joint>
     <static>0</static>
     <allow_auto_disable>1</allow_auto_disable>
-    <plugin name='model_push' filename='libmodel_push.so'>
+    <plugin name='model_push' filename='libteam2_model_push.so'>
       <robotNamespace>/</robotNamespace>
       <topicName>/robot_cmd_vel</topicName>
     </plugin>

@@ -94,8 +94,9 @@ public:
 
   // Called by the world update start event
   void OnUpdate() {
-    // Check /vel_cmd timeout (150ms)
-    if (ros::Time::now().toSec() - lastUpdateTime.toSec() > 0.15) {
+    // move_base is usually 10 Hz, but Gazebo/ROS scheduling can jitter.
+    // A longer timeout prevents valid navigation commands from being clipped.
+    if (ros::Time::now().toSec() - lastUpdateTime.toSec() > 0.5) {
       this->xSpeed = 0.0;
       this->ySpeed = 0.0;
       this->thetaSpeed = 0.0;

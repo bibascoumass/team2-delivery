@@ -1,42 +1,85 @@
-controller_frequency: 10.0
+controller_frequency: 12.0
 planner_frequency: 1.0
 base_global_planner: navfn/NavfnROS
-base_local_planner: base_local_planner/TrajectoryPlannerROS
+base_local_planner: dwa_local_planner/DWAPlannerROS
 
-TrajectoryPlannerROS:
+recovery_behavior_enabled: true
+clearing_rotation_allowed: false
+
+recovery_behaviors:
+  - {name: conservative_reset, type: clear_costmap_recovery/ClearCostmapRecovery}
+  - {name: aggressive_reset, type: clear_costmap_recovery/ClearCostmapRecovery}
+
+conservative_reset:
+  reset_distance: 1.0
+
+aggressive_reset:
+  reset_distance: 0.0
+
+NavfnROS:
+  allow_unknown: true
+
+DWAPlannerROS:
   max_vel_x: 0.45
-  min_vel_x: 0.08
-  max_vel_theta: 1.2
-  min_in_place_vel_theta: 0.25
+  min_vel_x: -0.08
+  max_vel_y: 0.0
+  min_vel_y: 0.0
+  max_vel_trans: 0.45
+  min_vel_trans: 0.04
+  max_vel_theta: 1.10
+  min_vel_theta: 0.10
   acc_lim_x: 1.0
-  acc_lim_theta: 2.0
+  acc_lim_y: 0.0
+  acc_lim_theta: 1.8
   holonomic_robot: false
+  meter_scoring: true
+  penalize_negative_x: false
 
-  # use defaults for TrajectoryPlannerROS params 
-  # sim_time: 1.2
-  # vx_samples: 20
-  # vtheta_samples: 30
+  sim_time: 1.2
+  vx_samples: 16
+  vy_samples: 1
+  vtheta_samples: 48
+  sim_granularity: 0.025
+  angular_sim_granularity: 0.025
 
-  # pdist_scale: 0.8
-  # gdist_scale: 1.5
-  # occdist_scale: 0.02
+  path_distance_bias: 28.0
+  goal_distance_bias: 28.0
+  occdist_scale: 0.02
+  forward_point_distance: 0.24
+  stop_time_buffer: 0.08
+  scaling_speed: 0.25
+  max_scaling_factor: 0.08
+  oscillation_reset_dist: 0.20
+  xy_goal_tolerance: 0.32
+  yaw_goal_tolerance: 1.57
+  latch_xy_goal_tolerance: true
+  trans_stopped_vel: 0.01
+  theta_stopped_vel: 0.01
 
 global_costmap:
   global_frame: map
   robot_base_frame: base_link
   update_frequency: 2.0
   publish_frequency: 1.0
-  static_map: false
+  static_map: true
   rolling_window: false
   width: 20.0
   height: 20.0
   resolution: 0.05
-  robot_radius: 0.20
+  robot_radius: 0.12
   track_unknown_space: true
 
   plugins:
+    - {name: static_layer, type: "costmap_2d::StaticLayer"}
     - {name: obstacles, type: "costmap_2d::ObstacleLayer"}
     - {name: inflation, type: "costmap_2d::InflationLayer"}
+
+  static_layer:
+    map_topic: /map
+    subscribe_to_updates: true
+    track_unknown_space: true
+    unknown_cost_value: -1
+    lethal_cost_threshold: 100
 
   obstacles:
     observation_sources: laser
@@ -46,10 +89,13 @@ global_costmap:
       data_type: LaserScan
       marking: true
       clearing: true
+      obstacle_range: 3.0
+      raytrace_range: 4.5
       max_obstacle_height: 2.0
 
   inflation:
-    inflation_radius: 0.25
+    inflation_radius: 0.16
+    cost_scaling_factor: 12.0
 
 local_costmap:
   global_frame: odom
@@ -61,7 +107,7 @@ local_costmap:
   width: 4.0
   height: 4.0
   resolution: 0.05
-  robot_radius: 0.20
+  robot_radius: 0.12
   plugins:
     - {name: obstacles, type: "costmap_2d::ObstacleLayer"}
     - {name: inflation, type: "costmap_2d::InflationLayer"}
@@ -73,6 +119,9 @@ local_costmap:
       data_type: LaserScan
       marking: true
       clearing: true
+      obstacle_range: 3.0
+      raytrace_range: 3.5
       max_obstacle_height: 2.0
   inflation:
-    inflation_radius: 0.25
+    inflation_radius: 0.16
+    cost_scaling_factor: 12.0

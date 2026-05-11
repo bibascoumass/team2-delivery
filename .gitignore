@@ -5,3 +5,4 @@ logs/
 __pycache__/
 *.bag
 .catkin_workspace
+*.dae

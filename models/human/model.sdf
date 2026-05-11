@@ -55,7 +55,7 @@
     </link>
 
     <!-- model_push plugin: same as triton but subscribes to /ped_cmd_vel -->
-    <plugin name="model_push" filename="libmodel_push.so">
+    <plugin name="model_push" filename="libteam2_model_push.so">
       <topicName>/ped_cmd_vel</topicName>
     </plugin>
   </model>
