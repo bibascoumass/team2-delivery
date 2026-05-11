@@ -12,27 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   actionlib_msgs
   cv_bridge
-  message_generation
   tf
-)
-
-add_message_files(
-  FILES
-  QRInfo.msg
-  SafetyStatus.msg
-  Observation.msg
-)
-
-add_action_files(
-  FILES
-  ScanTable.action
-)
-
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
-  actionlib_msgs
 )
 
 catkin_package(
@@ -47,7 +27,6 @@ catkin_package(
     actionlib
     actionlib_msgs
     cv_bridge
-    message_runtime
     tf
 )
 
