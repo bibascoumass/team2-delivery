@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import math
 
 import rospy
@@ -36,7 +36,7 @@ def safe_cmd(state, now):
 
 def open_serial_port():
     if serial is None:
-        raise RuntimeError('python3-serial is required for real hardware mode')
+        raise RuntimeError('python-serial is required for real hardware mode')
 
     port = rospy.get_param('~serial_port', '/dev/ttyACM0')
     baud = rospy.get_param('~baud_rate', 115200)
@@ -185,7 +185,7 @@ def main():
             if sim_mode:
                 rospy.logwarn_throttle(5.0, 'hardware_bridge: watchdog timeout - simulated motors stopped')
             else:
-                rospy.logwarn_throttle(5.0, 'hardware_bridge: watchdog timeout — cutting motor power')
+                rospy.logwarn_throttle(5.0, 'hardware_bridge: watchdog timeout - cutting motor power')
                 send_real_stop(serial_port, state)
 
         if sim_mode:
