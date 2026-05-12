@@ -12,17 +12,30 @@
   <arg name="image_topic" default="/camera/rgb/image_raw"/>
   <arg name="depth_topic" default="/camera/depth/image_raw"/>
 
-  <include file="$(find team2_delivery)/launch/mapping_hw.launch">
-    <arg name="lidar_port" value="$(arg lidar_port)"/>
-    <arg name="lidar_baud" value="$(arg lidar_baud)"/>
-    <arg name="use_saved_map" value="true"/>
-    <arg name="use_explore" value="false"/>
-    <arg name="open_rviz" value="$(arg open_rviz)"/>
-    <arg name="map_file" value="$(arg map_file)"/>
-    <arg name="initial_x" value="$(arg initial_x)"/>
-    <arg name="initial_y" value="$(arg initial_y)"/>
-    <arg name="initial_yaw" value="$(arg initial_yaw)"/>
-  </include>
+  <node pkg="rplidar_ros" type="rplidarNode" name="rplidar" output="screen">
+    <param name="serial_port"      value="$(arg lidar_port)"/>
+    <param name="serial_baudrate"  value="$(arg lidar_baud)"/>
+    <param name="frame_id"         value="base_scan"/>
+    <param name="angle_compensate" value="true"/>
+  </node>
+
+  <node name="hardware_bridge" pkg="team2_delivery" type="hardware_bridge.py" output="screen">
+    <param name="sim_mode" value="false"/>
+  </node>
+
+  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" output="screen"/>
+
+  <node pkg="amcl" type="amcl" name="amcl" output="screen">
+    <rosparam file="$(find team2_delivery)/config/amcl.yaml" command="load"/>
+    <param name="initial_pose_x" value="$(arg initial_x)"/>
+    <param name="initial_pose_y" value="$(arg initial_y)"/>
+    <param name="initial_pose_a" value="$(arg initial_yaw)"/>
+  </node>
+
+  <node pkg="move_base" type="move_base" name="move_base" output="screen">
+    <rosparam file="$(find team2_delivery)/config/move_base_delivery.yaml" command="load"/>
+    <remap from="cmd_vel" to="/cmd_vel"/>
+  </node>
 
   <node pkg="team2_delivery" type="delivery_state_machine.py"
         name="delivery_state_machine" output="screen"/>
@@ -41,6 +54,7 @@
     <param name="depth_topic" value="$(arg depth_topic)"/>
   </node>
 
-  <node pkg="team2_delivery" type="qr_goal_tracker.py"
-        name="qr_goal_tracker" output="screen"/>
+  <node pkg="team2_delivery" type="qr_goal_tracker.py" name="qr_goal_tracker" output="screen"/>
+
+  <node if="$(arg open_rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find team2_delivery)/config/robot.rviz" output="screen"/>
 </launch>

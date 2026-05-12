@@ -645,6 +645,65 @@
         </ode>
       </physics>
     </joint>
+    <link name='camera_link'>
+      <pose>0.05 0 0.15 0 0 0</pose>
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>0.000166667</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.000166667</iyy><iyz>0</iyz>
+          <izz>0.000166667</izz>
+        </inertia>
+      </inertial>
+      <visual name='camera_visual'>
+        <geometry>
+          <box><size>0.025 0.09 0.025</size></box>
+        </geometry>
+        <material>
+          <ambient>0.1 0.1 0.1 1</ambient>
+          <diffuse>0.1 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+      <sensor name='rgbd_camera' type='depth'>
+        <always_on>1</always_on>
+        <visualize>0</visualize>
+        <update_rate>15</update_rate>
+        <camera>
+          <horizontal_fov>1.047</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>8.0</far>
+          </clip>
+        </camera>
+        <plugin name='rgbd_camera_controller' filename='libgazebo_ros_openni_kinect.so'>
+          <cameraName>camera</cameraName>
+          <alwaysOn>true</alwaysOn>
+          <updateRate>15</updateRate>
+          <imageTopicName>rgb/image_raw</imageTopicName>
+          <depthImageTopicName>depth/image_raw</depthImageTopicName>
+          <pointCloudTopicName>depth/points</pointCloudTopicName>
+          <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
+          <depthImageCameraInfoTopicName>depth/camera_info</depthImageCameraInfoTopicName>
+          <frameName>camera_rgb_optical_frame</frameName>
+          <distortionK1>0</distortionK1>
+          <distortionK2>0</distortionK2>
+          <distortionK3>0</distortionK3>
+          <distortionT1>0</distortionT1>
+          <distortionT2>0</distortionT2>
+        </plugin>
+      </sensor>
+    </link>
+
+    <joint name='camera_joint' type='fixed'>
+      <parent>link_1</parent>
+      <child>camera_link</child>
+    </joint>
+
     <static>0</static>
     <allow_auto_disable>1</allow_auto_disable>
     <plugin name='model_push' filename='libteam2_model_push.so'>

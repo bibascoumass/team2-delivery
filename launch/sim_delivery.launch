@@ -1,0 +1,87 @@
+<launch>
+  <arg name="initial_x"   default="0.0"/>
+  <arg name="initial_y"   default="0.0"/>
+  <arg name="initial_yaw" default="0.0"/>
+  <arg name="open_rviz"   default="false"/>
+
+  <!-- Make both the Triton model and turtlebot3_house model discoverable by Gazebo -->
+  <env name="GAZEBO_MODEL_PATH"
+       value="$(find team2_delivery)/models:$(find turtlebot3_gazebo)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+
+  <!-- Gazebo with the restaurant world -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find team2_delivery)/world/turtlebot3_house.world"/>
+    <arg name="paused"     value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui"        value="true"/>
+    <arg name="headless"   value="false"/>
+    <arg name="debug"      value="false"/>
+  </include>
+
+  <!-- Spawn the Triton robot -->
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_triton" output="screen"
+        args="-sdf
+              -model triton
+              -file $(find team2_delivery)/models/triton/model.sdf
+              -x $(arg initial_x)
+              -y $(arg initial_y)
+              -z 0.05
+              -Y $(arg initial_yaw)"/>
+
+  <!-- Ground-truth odometry from Gazebo -->
+  <node pkg="team2_delivery" type="position_publisher.py" name="position_publisher" output="screen"/>
+
+  <!-- Relay /cmd_vel → /robot_cmd_vel for the Gazebo motion plugin -->
+  <node pkg="topic_tools" type="relay" name="cmd_vel_relay" output="screen"
+        args="/cmd_vel /robot_cmd_vel"/>
+
+  <!-- Static TFs: base_link → base_scan (LIDAR at z=0.161) -->
+  <node pkg="tf" type="static_transform_publisher" name="base_to_laser"
+        args="0 0 0.161 0 0 0 base_link base_scan 50"/>
+
+  <!-- Static TFs: base_link → camera_link -->
+  <node pkg="tf" type="static_transform_publisher" name="base_to_camera"
+        args="0.05 0 0.15 0 0 0 base_link camera_link 50"/>
+
+  <!-- Map server -->
+  <node pkg="map_server" type="map_server" name="map_server" output="screen"
+        args="$(find team2_delivery)/maps/restaurant_map.yaml"/>
+
+  <!-- AMCL localisation -->
+  <node pkg="amcl" type="amcl" name="amcl" output="screen">
+    <rosparam file="$(find team2_delivery)/config/amcl.yaml" command="load"/>
+    <param name="initial_pose_x" value="$(arg initial_x)"/>
+    <param name="initial_pose_y" value="$(arg initial_y)"/>
+    <param name="initial_pose_a" value="$(arg initial_yaw)"/>
+  </node>
+
+  <!-- Navigation stack -->
+  <node pkg="move_base" type="move_base" name="move_base" output="screen">
+    <rosparam file="$(find team2_delivery)/config/move_base_delivery.yaml" command="load"/>
+    <remap from="cmd_vel" to="/cmd_vel"/>
+  </node>
+
+  <!-- Delivery nodes -->
+  <node pkg="team2_delivery" type="delivery_state_machine.py"
+        name="delivery_state_machine" output="screen"/>
+
+  <node pkg="team2_delivery" type="cmd_mux.py"
+        name="cmd_mux" output="screen"/>
+
+  <node pkg="team2_delivery" type="exploration_navigator.py"
+        name="exploration_navigator" output="screen">
+    <param name="hotspots_yaml" value="$(find team2_delivery)/config/hotspots.yaml"/>
+  </node>
+
+  <node pkg="team2_delivery" type="qr_detector.py"
+        name="qr_detector" output="screen">
+    <param name="image_topic" value="/camera/rgb/image_raw"/>
+    <param name="depth_topic" value="/camera/depth/image_raw"/>
+  </node>
+
+  <node pkg="team2_delivery" type="qr_goal_tracker.py"
+        name="qr_goal_tracker" output="screen"/>
+
+  <node if="$(arg open_rviz)" pkg="rviz" type="rviz" name="rviz"
+        args="-d $(find team2_delivery)/config/robot.rviz" output="screen"/>
+</launch>
