@@ -123,9 +123,9 @@ def main():
     map_yaml = rospy.get_param("~map_yaml")
     output_yaml = rospy.get_param("~output_yaml", "hotspots.yaml")
 
-    clearance_m = rospy.get_param("~clearance_m", 0.45)
+    clearance_m = rospy.get_param("~clearance_m", 0.20)
     sample_spacing_m = rospy.get_param("~sample_spacing_m", 0.50)
-    hotspot_spacing_m = rospy.get_param("~hotspot_spacing_m", 1.75)
+    hotspot_spacing_m = rospy.get_param("~hotspot_spacing_m", 1.0)
     max_hotspots = rospy.get_param("~max_hotspots", 20)
     visibility_range_m = rospy.get_param("~visibility_range_m", 4.0)
     ray_count = rospy.get_param("~ray_count", 32)
@@ -154,9 +154,9 @@ def main():
             vis = visibility_score(safe_mask, px, py, max_range_cells, ray_count)
             clearance = float(dist[py, px] * resolution)
 
-            near_structure_bonus = max(0.0, 2.0 - clearance)
+            # near_structure_bonus = max(0.0, 2.0 - clearance)
 
-            score = float(vis) + 40.0 * near_structure_bonus
+            score = float(vis) + 40.0
 
             wx, wy = pixel_to_world(px, py, h, resolution, origin)
 
