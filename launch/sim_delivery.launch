@@ -82,6 +82,10 @@
   <node pkg="team2_delivery" type="qr_goal_tracker.py"
         name="qr_goal_tracker" output="screen"/>
 
+  <!-- <node pkg="team2_delivery" type="delivery_logger.py" name="delivery_logger" output="screen">
+    <param name="hotspots_yaml" value="$(find team2_delivery)/config/hotspots.yaml"/>
+  </node> -->
+
   <node if="$(arg open_rviz)" pkg="rviz" type="rviz" name="rviz"
         args="-d $(find team2_delivery)/config/robot.rviz" output="screen"/>
 </launch>

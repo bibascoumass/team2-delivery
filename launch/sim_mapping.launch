@@ -30,10 +30,10 @@
               -Y $(arg initial_yaw)"/>
 
   <!-- Ground-truth odometry from Gazebo -->
-  <node pkg="team2_delivery" type="position_publisher.py" name="position_publisher" output="screen"/>
+  <node pkg="team2_delivery" type="position_publisher.py" name="position_publisher" output="log"/>
 
   <!-- Relay /cmd_vel → /robot_cmd_vel for the Gazebo motion plugin -->
-  <node pkg="topic_tools" type="relay" name="cmd_vel_relay" output="screen"
+  <node pkg="topic_tools" type="relay" name="cmd_vel_relay" output="log"
         args="/cmd_vel /robot_cmd_vel"/>
 
   <!-- Static TFs: base_link → base_scan (LIDAR at z=0.161) -->
@@ -45,7 +45,8 @@
         args="0.05 0 0.15 0 0 0 base_link camera_link 50"/>
 
   <!-- GMapping SLAM -->
-  <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+  <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="log"
+        launch-prefix="bash -c 'exec 2&gt;/dev/null; exec &quot;$@&quot;' bash">
     <param name="base_frame"          value="base_link"/>
     <param name="odom_frame"          value="odom"/>
     <param name="map_frame"           value="map"/>
@@ -81,13 +82,13 @@
   </node>
 
   <!-- Navigation for autonomous exploration (static_map: false for mapping) -->
-  <node pkg="move_base" type="move_base" name="move_base" output="screen">
+  <node pkg="move_base" type="move_base" name="move_base" output="log">
     <rosparam file="$(find team2_delivery)/config/move_base_mapping.yaml" command="load"/>
     <remap from="cmd_vel" to="/cmd_vel"/>
   </node>
 
   <!-- Optional autonomous frontier exploration -->
-  <node if="$(arg use_explore)" pkg="explore_lite" type="explore" name="explore" output="screen">
+  <node if="$(arg use_explore)" pkg="explore_lite" type="explore" name="explore" output="log">
     <param name="robot_base_frame"      value="base_link"/>
     <param name="costmap_topic"         value="/move_base/global_costmap/costmap"/>
     <param name="costmap_updates_topic" value="/move_base/global_costmap/costmap_updates"/>
@@ -100,6 +101,12 @@
     <param name="visualize"             value="true"/>
     <param name="transform_tolerance"   value="0.5"/>
   </node>
+
+  <!-- <node pkg="team2_delivery" type="delivery_logger.py" name="delivery_logger" output="screen">
+    <param name="hotspots_yaml" value="$(find team2_delivery)/config/hotspots.yaml"/>
+  </node> -->
+
+  <node pkg="team2_delivery" type="map_quality_monitor.py" name="map_quality_monitor" output="screen"/>
 
   <node if="$(arg open_rviz)" pkg="rviz" type="rviz" name="rviz"
         args="-d $(find team2_delivery)/config/robot.rviz" output="screen"/>

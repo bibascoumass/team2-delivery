@@ -1,16 +1,21 @@
 <launch>
-  <arg name="lidar_port" default="/dev/ttyUSB0"/>
-  <arg name="lidar_baud" default="115200"/>
+  <arg name="lidar_port" default="/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_976e12c989fada42b9c68328c6855255-if00-port"/>
+  <arg name="lidar_baud" default="256000"/>
   <arg name="map_file" default="/home/triton/catkin_ws/my_map_explore.yaml"/>
-  <arg name="hotspots_yaml" default="/home/triton/catkin_ws/hotspots.yaml"/>
+  <arg name="hotspots_yaml" default="/home/triton/catkin_ws/src/team2_delivery/config/hotspots.yaml"/>
   <arg name="open_rviz" default="false"/>
 
   <arg name="initial_x" default="0.0"/>
   <arg name="initial_y" default="0.0"/>
   <arg name="initial_yaw" default="0.0"/>
 
-  <arg name="image_topic" default="/camera/rgb/image_raw"/>
-  <arg name="depth_topic" default="/camera/depth/image_raw"/>
+  <arg name="image_topic" default="/camera/color/image_raw"/>
+  <arg name="depth_topic" default="/camera/depth/image_rect_raw"/>
+
+  <arg name="camera" default="true"/>
+  <group if="$(arg camera)">
+	  <include file="$(find realsense2_camera)/launch/rs_aligned_depth.launch" />
+  </group>
 
   <node pkg="rplidar_ros" type="rplidarNode" name="rplidar" output="screen">
     <param name="serial_port"      value="$(arg lidar_port)"/>
@@ -29,7 +34,7 @@
     <rosparam file="$(find team2_delivery)/config/amcl.yaml" command="load"/>
     <param name="initial_pose_x" value="$(arg initial_x)"/>
     <param name="initial_pose_y" value="$(arg initial_y)"/>
-    <param name="initial_pose_a" value="$(arg initial_yaw)"/>
+    <param name="initial_pose_yaw" value="$(arg initial_yaw)"/>
   </node>
 
   <node pkg="move_base" type="move_base" name="move_base" output="screen">
@@ -55,6 +60,10 @@
   </node>
 
   <node pkg="team2_delivery" type="qr_goal_tracker.py" name="qr_goal_tracker" output="screen"/>
+
+  <!-- <node pkg="team2_delivery" type="delivery_logger.py" name="delivery_logger" output="screen">
+    <param name="hotspots_yaml" value="$(arg hotspots_yaml)"/>
+  </node> -->
 
   <node if="$(arg open_rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find team2_delivery)/config/robot.rviz" output="screen"/>
 </launch>
