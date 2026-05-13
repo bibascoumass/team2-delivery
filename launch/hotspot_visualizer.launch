@@ -1,0 +1,10 @@
+<launch>
+  <node pkg="team2_delivery"
+        type="hotspot_visualizer.py"
+        name="hotspot_visualizer"
+        output="screen">
+    <param name="hotspots_yaml" value="$(find team2_delivery)/config/hotspots.yaml"/>
+    <param name="marker_topic" value="/hotspot_markers"/>
+    <param name="publish_rate" value="1.0"/>
+  </node>
+</launch>
