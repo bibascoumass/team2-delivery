@@ -18,8 +18,8 @@ class QRDetector:
 
         self.bridge = CvBridge()
 
-        self.image_topic = rospy.get_param("~image_topic", "/camera/rgb/image_raw")
-        self.depth_topic = rospy.get_param("~depth_topic", "/camera/depth/image_raw")
+        self.image_topic = rospy.get_param("~image_topic", "/camera/color/image_raw")
+        self.depth_topic = rospy.get_param("~depth_topic", "/camera/depth/image_rect_raw")
 
         self.latest_depth = None
 
@@ -32,6 +32,7 @@ class QRDetector:
         rospy.loginfo("qr_detector running")
 
     def depth_cb(self, msg):
+        # rospy.loginfo("DEPTH_CB: %s", msg)
         try:
             self.latest_depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
         except Exception as e:
@@ -65,6 +66,7 @@ class QRDetector:
         return depth
 
     def image_cb(self, msg):
+        # rospy.loginfo("IMAGE_CB: %s", msg)
         try:
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
         except Exception as e:
