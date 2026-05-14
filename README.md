@@ -4,24 +4,31 @@ Autonomous Exploration and Vision-Based Destination Pursuit using the Triton rob
 NOTE: Due to issues working with the ROS Noetic Docker container on the Triton robot, ROS Melodic was used for running on the physical robot itself, but simulations were run on ROS Noetic. 
 
 # Dependencies
-```
-sudo apt install -y libzbar0
-pip3 install pyzbar opencv-python-headless numpy pynput pyyaml
-```
 
 ## Simulation Dependencies
-Clone: https://github.com/ROBOTIS-GIT/turtlebot3_simulations.git
+The simulation test environment uses a modified turtlebot3_house.world from the turtlebot3_simulations repository so it must be cloned:
+```
+cd ~/catkin_ws/src
+git clone https://github.com/ROBOTIS-GIT/turtlebot3_simulations.git
+```
+Replace the turtlebot3_house.world with team2_delivery's turtlebot3_house.world file:
+```
+cp -v $(rospack find team2_delivery)/world/turtlebot3_house.world $(rospack find turtlebot3_gazebo)/worlds/
+```
 
-Replace: turtlebot3_house.world with team2_delivery's turtlebot3_house.world file.
-
-The python directive header for the following files under scripts/ must be updated to use Python 3 (#!/usr/bin/python3):
+The python directive header for the following files under scripts/ must be updated to use Python 3 (#!/usr/bin/env python3):
 - cmd_mux.py
 - delivery_state_machine.py
 - exploration_navigator.py
 - qr_detector.py
 - qr_goal_tracker.py
 
-Install required ROS packages:
+The following command can be used to find and update all the files with the Python 2 header to Python 3:
+```
+grep -l '^#!/usr/bin/env python$' $(rospack find team2_delivery)/scripts/* | xargs -r sed -i 's|^#!/usr/bin/env python$|#!/usr/bin/env python3|'
+```
+
+Install required ROS packages and `libzbar0` which is required by the Python package `pyzbar` and used for QR-code detection:
 ```
 sudo apt install -y \
   ros-noetic-gazebo-ros \
@@ -42,12 +49,20 @@ sudo apt install -y \
   libzbar0
 ```
 
-## Hardware Dependencies
-The following packages must be cloned and compiled in order for the hardware launch files to work:
-- https://github.com/Slamtec/rplidar_ros.git
-- https://github.com/hrnr/m-explore.git
+Install Python dependencies 
+```
+pip3 install pyzbar opencv-python-headless numpy pynput pyyaml
+```
 
-Install required ROS packages:
+## Hardware Dependencies
+The `rplidar_ros` and `explore_lite` packages must be cloned and compiled in order for the hardware launch files to work:
+```
+cd ~/catkin_ws/src
+git clone https://github.com/Slamtec/rplidar_ros.git
+git clone https://github.com/hrnr/m-explore.git
+```
+
+Install required ROS packages and `libzbar0` which is required `pyzbar` and used for QR-code detection:
 ```
 sudo apt install -y \
   ros-melodic-gmapping \
@@ -62,15 +77,18 @@ sudo apt install -y \
   ros-melodic-xacro \
   ros-melodic-robot-state-publisher \
   ros-melodic-joint-state-publisher \
-  libzbar0
+  libzbar0 \
+  python-pip \
+  python-setuptools \
 ```
-If errors are encountered related to `pyzbar`, install:
-```bash
-sudo apt install -y libzbar0 python-pip python-setuptools
-python -m pip install --user pyzbar==0.1.9
+
+Install Python dependencies in the Triton user's home directory:
+```
+python -m pip install --user pyzbar==0.1.9 opencv-python-headless numpy pynput pyyaml
 ```
 
 # Run
+Build the ROS packages
 ```
 cd ~/catkin_ws ; catkin_make ; source devel/setup.bash
 ```
