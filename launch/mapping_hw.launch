@@ -5,10 +5,10 @@
   <arg name="base_baud" default="115200"/>
   <arg name="start_rplidar" default="true"/>
   <arg name="start_rosserial_base" default="true"/>
-  <arg name="use_saved_map" default="true"/>
-  <arg name="use_explore" default="false"/>
+  <arg name="use_saved_map" default="false"/>
+  <arg name="use_explore" default="true"/>
   <arg name="open_rviz" default="false"/>
-  <arg name="cmd_vel_topic" default="/cmd_vel"/>
+  <arg name="cmd_vel_topic" default="/nav_cmd_vel"/>
   <arg name="map_file" default="/home/triton/catkin_ws/my_map_explore.yaml"/>
   <arg name="initial_x" default="0.0"/>
   <arg name="initial_y" default="0.0"/>
