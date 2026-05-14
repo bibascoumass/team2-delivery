@@ -1,5 +1,7 @@
-# TODO
-- integrate camera feed and fuse with lidar in perception_hub 
+# Overview
+Autonomous Exploration and Vision-Based Destination Pursuit using the Triton robot.
+
+NOTE: Due to issues working with the ROS Noetic Docker container on the Triton robot, ROS Melodic was used for running on the physical robot itself, but simulations were run on ROS Noetic. 
 
 # Dependencies
 ```
@@ -7,31 +9,66 @@ sudo apt install -y libzbar0
 pip3 install pyzbar opencv-python-headless numpy pynput pyyaml
 ```
 
+## Simulation Dependencies
 Clone: https://github.com/ROBOTIS-GIT/turtlebot3_simulations.git
 
 Replace: turtlebot3_house.world with team2_delivery's turtlebot3_house.world file.
 
-# Config
+The python directive header for the following files under scripts/ must be updated to use Python 3 (#!/usr/bin/python3):
+- cmd_mux.py
+- delivery_state_machine.py
+- exploration_navigator.py
+- qr_detector.py
+- qr_goal_tracker.py
 
-## config/table_locations.yaml
-Table locations, delivery_settings and safety_thresholds
-- Table locations were placeholders and are ignored when hotspots are turned on
+Install required ROS packages:
+```
+sudo apt install -y \
+  ros-noetic-gazebo-ros \
+  ros-noetic-gazebo-plugins \
+  ros-noetic-gmapping \
+  ros-noetic-map-server \
+  ros-noetic-move-base \
+  ros-noetic-move-base-msgs \
+  ros-noetic-explore-lite \
+  ros-noetic-cv-bridge \
+  ros-noetic-tf \
+  ros-noetic-tf2-ros \
+  ros-noetic-tf2-geometry-msgs \
+  ros-noetic-rviz \
+  ros-noetic-xacro \
+  ros-noetic-robot-state-publisher \
+  ros-noetic-joint-state-publisher \
+  libzbar0
+```
 
-## config/amcl.yaml
-Full AMCL parameter set — likelihood_field laser model, diff drive odometry model, particles, update thresholds tuned for a slow-moving robot.
+## Hardware Dependencies
+The following packages must be cloned and compiled in order for the hardware launch files to work:
+- https://github.com/Slamtec/rplidar_ros.git
+- https://github.com/hrnr/m-explore.git
 
-## maps/restaurant_map.pgm + maps/restaurant_map.yaml
-Pre-built occupancy grid from a simulation mapping run. Required by both sim.launch and team2_delivery.launch for map_server.
-
-## config/hotspots.yaml
-
-## config/move_base_mapping.yaml
-- Added a StaticLayer to the global costmap so AMCL-based localization works during re-mapping runs (previously static_map: false).
-
-## config/move_base_delivery.yaml
-- recovery_behavior_enabled = disbled
-- track_unknown_space = false
-
+Install required ROS packages:
+```
+sudo apt install -y \
+  ros-melodic-gmapping \
+  ros-melodic-map-server \
+  ros-melodic-move-base \
+  ros-melodic-move-base-msgs \
+  ros-melodic-cv-bridge \
+  ros-melodic-tf \
+  ros-melodic-tf2-ros \
+  ros-melodic-tf2-geometry-msgs \
+  ros-melodic-rviz \
+  ros-melodic-xacro \
+  ros-melodic-robot-state-publisher \
+  ros-melodic-joint-state-publisher \
+  libzbar0
+```
+If errors are encountered related to `pyzbar`, install:
+```bash
+sudo apt install -y libzbar0 python-pip python-setuptools
+python -m pip install --user pyzbar==0.1.9
+```
 
 # Run
 ```
@@ -39,37 +76,43 @@ cd ~/catkin_ws ; catkin_make ; source devel/setup.bash
 ```
 
 ## Simulation
-NOTE: Robot is expected to be spawned in middle room with trashcan
+### Mapping
+```
+roslaunch team2_delivery sim_mapping.launch open_rviz:=true
+```
 
-1. Mapping
+Save map
 ```
-roslaunch team2_delivery mapping.launch open_rviz:=true
+rosrun map_server map_saver -f $(rospack find team2_delivery)/maps/<MAP_FILE_NAME>
 ```
-2. Save map
-```
-mkdir -p ~/catkin_ws/src/team2_delivery/maps
-rosrun map_server map_saver -f $(rospack find team2_delivery)/maps/restaurant_map
-```
-- This writes maps/restaurant_map.pgm and maps/restaurant_map.yaml
 
-3. Generate hotspots
+Generate hotspots
 ```
 rosrun team2_delivery generate_hotspots.py \
-  _map_yaml:=$(rospack find team2_delivery)/maps/restaurant_map.yaml \
-  _output_yaml:=$(rospack find team2_delivery)/config/hotspots.yaml
-```
-4. Delivery
-NOTE: 'Human' cylinder is expected to spawn next to lower left trash can and loop between the two trash cans
-```
-roslaunch team2_delivery sim.launch
+  _map_yaml:=$(rospack find team2_delivery)/maps/<MAP_FILE_NAME>.yaml \
+  _output_yaml:=$(rospack find team2_delivery)/config/<HOTSPOT_FILE_NAME>.yaml
 ```
 
-send delivery order:
+### Delivery
+```
+roslaunch team2_delivery sim_delivery.launch open_rviz:=true \
+  map_file:=$(rospack find team2_delivery)/maps/<MAP_FILE_NAME> \
+  hotspots_yaml:=$(rospack find team2_delivery)/config/<HOTSPOT_FILE_NAME>.yaml
+```
+- Note that the defaults for `map_file` and `hotspots_yaml` set in the launch file point to saved map and hotspot files taken from the custom turtlebot3_house.world environment. 
+
+Wait for:
+```text
+HOTSPOT_EXPLORER: connected to move_base
+```
+
+Send delivery order:
 ```
 rostopic pub /target_qr std_msgs/String "data: 'Table_2'" --once
 ```
+- data value is case insensitive
 
-check state:
+Monitor state transitions:
 ```
 rostopic echo /delivery_state
 ```
@@ -77,58 +120,49 @@ rostopic echo /delivery_state
 
 ## Hardware Run
 
-1. map
+### Mapping
 ```
-roslaunch team2_delivery mapping_hw.launch
+roslaunch team2_delivery mapping_hw.launch open_rviz:=true
 ```
-TODO: base_link and base_scan are commented out in mapping_hw.launch and team2_delivery.launch . Need to measure the physical LIDAR mounting offset
 
-2. deliver
+Save map
 ```
-roslaunch team2_delivery team2_delivery.launch
+rosrun map_server map_saver -f $(rospack find team2_delivery)/maps/<MAP_FILE_NAME>
 ```
-- use_sim_time = false 
 
-lidar args:
+Generate hotspots
+```
+rosrun team2_delivery generate_hotspots.py \
+  _map_yaml:=$(rospack find team2_delivery)/maps/<MAP_FILE_NAME> \
+  _output_yaml:=$(rospack find team2_delivery)/config/<HOTSPOT_FILE_NAME>.yaml
+```
+
+Delivery
 ```
 roslaunch team2_delivery team2_delivery.launch \
-  map_file:=/path/to/your_map.yaml \
-  lidar_port:=/dev/ttyUSB0 \
-  lidar_baud:=115200
+  map_file:=$(rospack find team2_delivery)/maps/<MAP_FILE_NAME> \
+  hotspots_yaml:=$(rospack find team2_delivery)/config/<HOTSPOT_FILE_NAME>.yaml
 ```
 
-send order:
+Wait for:
+```text
+HOTSPOT_EXPLORER: connected to move_base
+```
+
+Send delivery order:
 ```
 rostopic pub /target_qr std_msgs/String "data: 'Table_2'" --once
 ```
----
+- data value is case insensitive
 
-# TOPICS
-| Topic | Type | Description |
-|---|---|---|
-| /target_qr | String | delivery order IDs |
-| /delivery_state | String | current state |
-| /qr_data | QRInfo.msg | QR scan results |
-| /safety_status | SafetyStatus.msg | CLEAR / WARNING / CRITICAL obstacle level |
-| /scan |  |  |
-| /cmd_vel | | |
-| /odom | | |
-| /map |OccupancyGrid |  |
+# Expected Flow
 
-# Nodes
+```text
+WAIT_FOR_ORDER -> EXPLORE -> QR_TRACK -> ARRIVED
+```
 
-## hardware_bridge.py
-- Reads ODOM x y yaw vx wz lines back from Arduino, publishes /odom and broadcasts odom → base_link TF at 20 Hz
-- hardware_bridge now receives initial_x/y/yaw so dead-reckoning sim odometry starts at the correct spawn position
-- Opens a port at startup default params: (/dev/ttyACM0, 115200 baud)
-- Sends velocity commands to Arduino as CMD {linear_x:.3f} {angular_z:.3f}\n
-- Sends a serial stop command (CMD 0.000 0.000) on timeout
-- sim_mode=true path: dead-reckoning odometry integration (mid-point Euler) so /odom + TF still work in simulation without Arduino
-
-## task_coordinator.py
-- AVOID_DYNAMIC triggers for dynamic obstacles. It parses the sensor_source field of SafetyStatus for a dynamic: prefix and only yields for dynamic objects. Static obstacle warnings do NOT interrupt delivery.
-
-# Utils
-
-## delivery_debug_logger.py / explore_debug_logger.py : 
-- Subscribe to all major topics and log data to CSV 
+- `delivery_state_machine.py` receives `/target_qr` and switches to `EXPLORE`.
+- `exploration_navigator.py` visits hotspots from `hotspots.yaml`.
+- At each hotspot, the robot rotates and scans for the QR.
+- `qr_detector.py` publishes detected QR information.
+- If the detected QR matches the target, `qr_goal_tracker.py` takes over and drives toward it.
