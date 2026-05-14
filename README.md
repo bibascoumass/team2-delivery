@@ -119,9 +119,9 @@ roslaunch team2_delivery sim_delivery.launch open_rviz:=true \
 ```
 - Note that the defaults for `map_file` and `hotspots_yaml` set in the launch file point to saved map and hotspot files taken from the custom turtlebot3_house.world environment. 
 
-Wait for:
-```text
-HOTSPOT_EXPLORER: connected to move_base
+Monitor state transitions and ensure the Robot's state is in WAIT_FOR_ORDER before sending the delivery order in the next step:
+```
+rostopic echo /delivery_state
 ```
 
 Send delivery order:
@@ -130,10 +130,6 @@ rostopic pub /target_qr std_msgs/String "data: 'Table_2'" --once
 ```
 - data value is case insensitive
 
-Monitor state transitions:
-```
-rostopic echo /delivery_state
-```
 ---
 
 ## Hardware Run
@@ -162,9 +158,9 @@ roslaunch team2_delivery team2_delivery.launch \
   hotspots_yaml:=$(rospack find team2_delivery)/config/<HOTSPOT_FILE_NAME>.yaml
 ```
 
-Wait for:
-```text
-HOTSPOT_EXPLORER: connected to move_base
+Monitor state transitions and ensure the Robot's state is in WAIT_FOR_ORDER before sending the delivery order in the next step:
+```
+rostopic echo /delivery_state
 ```
 
 Send delivery order:
